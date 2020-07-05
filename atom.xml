@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://fireae.github.io</id>
     <title>Gridea</title>
-    <updated>2020-07-01T15:48:20.338Z</updated>
+    <updated>2020-07-05T10:02:52.443Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://fireae.github.io"/>
     <link rel="self" href="https://fireae.github.io/atom.xml"/>
@@ -10,6 +10,110 @@
     <logo>https://fireae.github.io/images/avatar.png</logo>
     <icon>https://fireae.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Gridea</rights>
+    <entry>
+        <title type="html"><![CDATA[frp+ubuntu+阿里云连接内网电脑已经SSH和桌面共享]]></title>
+        <id>https://fireae.github.io/post/frpubuntua-li-yun-lian-jie-nei-wang-dian-nao-yi-jing-ssh-he-zhuo-mian-gong-xiang/</id>
+        <link href="https://fireae.github.io/post/frpubuntua-li-yun-lian-jie-nei-wang-dian-nao-yi-jing-ssh-he-zhuo-mian-gong-xiang/">
+        </link>
+        <updated>2020-07-05T09:15:37.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="需要准备的东西">需要准备的东西</h2>
+<ol>
+<li>内网电脑或家中电脑，命名为机器A,ubuntu16.04</li>
+<li>阿里云服务器， 命名为机器B, ubuntu</li>
+<li>外网电脑或笔记本电脑，用来访问内网电脑或家中电脑，命名为机器C,macos</li>
+</ol>
+<p>frp，下载链接 https://github.com/fatedier/frp/releases，<br>
+finalshell，下载链接 http://www.hostbuf.com/t/988.html<br>
+vncviewer，下载链接 https://www.realvnc.com/en/connect/download/viewer/</p>
+<h3 id="机器b的配置ubuntu">机器B的配置,ubuntu</h3>
+<p>修改<code>frps.ini</code></p>
+<p>[common]<br>
+bind_port = 7000 #服务器端口<br>
+token = 12345678<br>
+dashboard_port = 7500 # 后台管理端口<br>
+dashboard_user = admin # 访问后台的用户<br>
+dashborad_pwd = admin</p>
+<p>max_pool_count = 5<br>
+log_file = ./frps.log<br>
+log_level = info<br>
+log_max_days = 3</p>
+<ol start="2">
+<li>执行frps， 启动服务</li>
+</ol>
+<p><code>nohup ./frps -c ./frps.ini &amp;</code></p>
+<ol start="3">
+<li>在阿里云服务器上配置端口</li>
+</ol>
+<p>在阿里云管理平台配置<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F25471.html%3Fspm%3D5176.2020520101.0.0.65834df5tX65eO">安全组规则</a>：服务器段需要设置端口<strong>入站</strong>规则：**注意是端口：7000和7500，6000， 5910.</p>
+<h3 id="机器a的配置ubuntu1604">机器A的配置，ubuntu16.04</h3>
+<ol>
+<li>修改配置文件，frpc.ini</li>
+</ol>
+<p>[common]<br>
+server_addr = x.x.x.x # 阿里云服务器公网IP<br>
+server_port = 7000<br>
+token = 12345678</p>
+<p>[ubuntu-ssh]<br>
+type = tcp<br>
+local_ip = 127.0.0.1<br>
+local_port = 22<br>
+remote_port = 6000</p>
+<p>[ubuntu-vnc]<br>
+type = tcp<br>
+local_ip = 127.0.0.1<br>
+local_port = 5900<br>
+remote_port = 5910</p>
+<ol start="2">
+<li>
+<p>启动frpc服务<br>
+<code>nohup ./frpc -c ./frpc.ini &amp;</code></p>
+</li>
+<li>
+<p>【可选】启动远程桌面访问</p>
+</li>
+</ol>
+<ul>
+<li>
+<p>3.1安装 X11VNC<br>
+<code>sudo apt install x11vnc -y</code></p>
+</li>
+<li>
+<p>3.2 配置访问密码</p>
+<p><code>sudo x11vnc -storepasswd /etc/x11vnc.pass</code></p>
+</li>
+<li>
+<p>3.3  创建服务<br>
+<code>vim /lib/systemd/system/x11vnc.service</code></p>
+</li>
+</ul>
+<p>粘贴如下代码，最后 :wq 保存，请使用root用户，否则没有权限。<br>
+[Unit]<br>
+Description=Start x11vnc at startup.<br>
+After=multi-user.target<br>
+[Service]<br>
+Type=simple<br>
+ExecStart=/usr/bin/x11vnc -auth guess -forever -loop -noxdamage -repeat -rfbauth /etc/x11vnc.pass -rfbport 5900 -shared<br>
+[Install]<br>
+WantedBy=multi-user.target</p>
+<ul>
+<li>3.4  修改防火墙配置，配置和启动服务<br>
+<code>sudo ufw allow 5900</code><br>
+<code>sudo systemctl enable x11vnc.service</code><br>
+<code>sudo systemctl daemon-reload</code></li>
+<li>3.5 重启<br>
+<code>sudo reboot</code></li>
+</ul>
+<h3 id="机器c的配置">机器C的配置</h3>
+<ol>
+<li>下载finalshell， 通过ssh 访问机器A。</li>
+</ol>
+<p>主机 阿里云外网IP，端口6000</p>
+<ol start="2">
+<li>下载vncviewer，通过vnc远程桌面访问机器A。</li>
+</ol>
+<p>主机  阿里云外网IP，端口5910</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Hello Gridea]]></title>
         <id>https://fireae.github.io/post/hello-gridea/</id>
